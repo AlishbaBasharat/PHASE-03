@@ -1,0 +1,217 @@
+mcp_version: 1.0.0
+info:
+  title: Todo Task Management Tools
+  description: MCP Server tools for task management operations
+  version: 1.0.0
+  server_name: todo-mcp-server
+
+tools:
+  - name: create_task
+    description: Creates a new task for the authenticated user
+    parameters:
+      type: object
+      required:
+        - title
+        - user_id
+      properties:
+        title:
+          type: string
+          description: Task title
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          description: Optional task description
+          maxLength: 10000
+        user_id:
+          type: string
+          format: uuid
+          description: User identifier (for isolation)
+    returns:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        data:
+          type: object
+          properties:
+            task:
+              $ref: '#/components/schemas/Task'
+
+  - name: list_tasks
+    description: Lists tasks for the authenticated user with optional filtering
+    parameters:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: User identifier (for isolation)
+        status_filter:
+          type: string
+          enum: [all, completed, incomplete]
+          default: all
+          description: Filter tasks by completion status
+    returns:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        data:
+          type: object
+          properties:
+            tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/Task'
+            total:
+              type: integer
+
+  - name: update_task
+    description: Updates an existing task
+    parameters:
+      type: object
+      required:
+        - task_id
+        - user_id
+        - updates
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: Task identifier to update
+        user_id:
+          type: string
+          format: uuid
+          description: User identifier (for isolation)
+        updates:
+          type: object
+          description: Fields to update
+          properties:
+            title:
+              type: string
+              minLength: 1
+              maxLength: 255
+            description:
+              type: string
+              maxLength: 10000
+            completed:
+              type: boolean
+    returns:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        data:
+          type: object
+          properties:
+            task:
+              $ref: '#/components/schemas/Task'
+
+  - name: delete_task
+    description: Deletes a task
+    parameters:
+      type: object
+      required:
+        - task_id
+        - user_id
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: Task identifier to delete
+        user_id:
+          type: string
+          format: uuid
+          description: User identifier (for isolation)
+    returns:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+
+  - name: toggle_task_completion
+    description: Toggles task completion status (completed <-> incomplete)
+    parameters:
+      type: object
+      required:
+        - task_id
+        - user_id
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: Task identifier to toggle
+        user_id:
+          type: string
+          format: uuid
+          description: User identifier (for isolation)
+    returns:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        data:
+          type: object
+          properties:
+            task:
+              $ref: '#/components/schemas/Task'
+
+components:
+  schemas:
+    Task:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - completed
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique task identifier
+        user_id:
+          type: string
+          format: uuid
+          description: Owner of the task
+        title:
+          type: string
+          maxLength: 255
+          description: Task title
+        description:
+          type: string
+          nullable: true
+          description: Task description (optional)
+        completed:
+          type: boolean
+          description: Completion status
+        created_at:
+          type: string
+          format: date-time
+          description: When the task was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the task was last updated
+
+notes:
+  - All tools are stateless - no session storage or caching
+  - Every tool requires user_id parameter for isolation enforcement
+  - Tools communicate with backend database via FastAPI endpoints or shared connection
+  - Error responses follow standardized API envelope format
+  - Authentication handled via service-to-service JWT token

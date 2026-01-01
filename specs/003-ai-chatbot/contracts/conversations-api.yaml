@@ -1,0 +1,553 @@
+openapi: 3.0.3
+info:
+  title: Conversations API
+  description: API endpoints for managing chat conversations in the AI-Powered Todo Chatbot
+  version: 1.0.0
+  contact:
+    name: Phase 3 AI Chatbot Team
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.production.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/{user_id}/conversations:
+    get:
+      summary: List user's conversations
+      description: Retrieve all conversations for the authenticated user, sorted by most recently updated
+      operationId: listConversations
+      tags:
+        - Conversations
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Authenticated user's ID
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Maximum number of conversations to return
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Number of conversations to skip for pagination
+      responses:
+        '200':
+          description: Conversations retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: Create new conversation
+      description: Create a new conversation thread for the authenticated user
+      operationId: createConversation
+      tags:
+        - Conversations
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Authenticated user's ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConversationRequest'
+      responses:
+        '201':
+          description: Conversation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/{user_id}/conversations/{conversation_id}:
+    get:
+      summary: Get conversation with messages
+      description: Retrieve a specific conversation including all its messages
+      operationId: getConversation
+      tags:
+        - Conversations
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Authenticated user's ID
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Conversation ID
+        - name: message_limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+          description: Maximum number of messages to return
+        - name: message_offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Number of messages to skip for pagination
+      responses:
+        '200':
+          description: Conversation retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationWithMessagesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: Update conversation
+      description: Update conversation properties (e.g., rename title)
+      operationId: updateConversation
+      tags:
+        - Conversations
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Authenticated user's ID
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Conversation ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConversationRequest'
+      responses:
+        '200':
+          description: Conversation updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: Delete conversation
+      description: Delete a conversation and all its messages (cascade delete)
+      operationId: deleteConversation
+      tags:
+        - Conversations
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Authenticated user's ID
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Conversation ID
+      responses:
+        '200':
+          description: Conversation deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Better Auth authentication
+
+  schemas:
+    Conversation:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique conversation identifier
+        user_id:
+          type: string
+          format: uuid
+          description: Owner of the conversation
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+          description: Conversation title
+        created_at:
+          type: string
+          format: date-time
+          description: When the conversation was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the conversation was last updated
+
+    Message:
+      type: object
+      required:
+        - id
+        - conversation_id
+        - user_id
+        - role
+        - content
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique message identifier
+        conversation_id:
+          type: string
+          format: uuid
+          description: Parent conversation ID
+        user_id:
+          type: string
+          format: uuid
+          description: Owner (matches conversation owner)
+        role:
+          type: string
+          enum: [user, assistant]
+          description: Who sent the message
+        content:
+          type: string
+          minLength: 1
+          maxLength: 100000
+          description: Message text content
+        created_at:
+          type: string
+          format: date-time
+          description: When the message was created
+
+    CreateConversationRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          description: Optional conversation title (auto-generated if not provided)
+        initial_message:
+          type: string
+          maxLength: 100000
+          description: Optional first message to start the conversation
+
+    UpdateConversationRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+          description: New conversation title
+
+    ConversationResponse:
+      type: object
+      required:
+        - status
+        - data
+        - meta
+      properties:
+        status:
+          type: string
+          enum: [success]
+        data:
+          $ref: '#/components/schemas/Conversation'
+        meta:
+          $ref: '#/components/schemas/MetaData'
+
+    ConversationsListResponse:
+      type: object
+      required:
+        - status
+        - data
+        - meta
+      properties:
+        status:
+          type: string
+          enum: [success]
+        data:
+          type: object
+          required:
+            - conversations
+            - total
+          properties:
+            conversations:
+              type: array
+              items:
+                $ref: '#/components/schemas/Conversation'
+            total:
+              type: integer
+              description: Total number of conversations for this user
+            limit:
+              type: integer
+              description: Limit applied to this query
+            offset:
+              type: integer
+              description: Offset applied to this query
+        meta:
+          $ref: '#/components/schemas/MetaData'
+
+    ConversationWithMessagesResponse:
+      type: object
+      required:
+        - status
+        - data
+        - meta
+      properties:
+        status:
+          type: string
+          enum: [success]
+        data:
+          type: object
+          required:
+            - conversation
+            - messages
+          properties:
+            conversation:
+              $ref: '#/components/schemas/Conversation'
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/Message'
+            message_count:
+              type: integer
+              description: Total number of messages in this conversation
+        meta:
+          $ref: '#/components/schemas/MetaData'
+
+    SuccessResponse:
+      type: object
+      required:
+        - status
+        - data
+        - meta
+      properties:
+        status:
+          type: string
+          enum: [success]
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: Success message
+        meta:
+          $ref: '#/components/schemas/MetaData'
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - error
+        - meta
+      properties:
+        status:
+          type: string
+          enum: [error]
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code
+            message:
+              type: string
+              description: Human-readable error message
+            details:
+              type: array
+              items:
+                type: object
+              description: Additional error details
+        meta:
+          $ref: '#/components/schemas/MetaData'
+
+    MetaData:
+      type: object
+      required:
+        - timestamp
+        - request_id
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp
+        request_id:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracing
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            error:
+              code: INVALID_REQUEST
+              message: Invalid request parameters
+              details: []
+            meta:
+              timestamp: "2025-12-31T00:00:00Z"
+              request_id: "123e4567-e89b-12d3-a456-426614174000"
+
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            error:
+              code: UNAUTHORIZED
+              message: Invalid or missing authentication token
+              details: []
+            meta:
+              timestamp: "2025-12-31T00:00:00Z"
+              request_id: "123e4567-e89b-12d3-a456-426614174000"
+
+    Forbidden:
+      description: User does not have permission to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            error:
+              code: FORBIDDEN
+              message: Access denied - resource belongs to another user
+              details: []
+            meta:
+              timestamp: "2025-12-31T00:00:00Z"
+              request_id: "123e4567-e89b-12d3-a456-426614174000"
+
+    NotFound:
+      description: Requested resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            error:
+              code: NOT_FOUND
+              message: Conversation not found
+              details: []
+            meta:
+              timestamp: "2025-12-31T00:00:00Z"
+              request_id: "123e4567-e89b-12d3-a456-426614174000"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            error:
+              code: INTERNAL_ERROR
+              message: An internal error occurred
+              details: []
+            meta:
+              timestamp: "2025-12-31T00:00:00Z"
+              request_id: "123e4567-e89b-12d3-a456-426614174000"

@@ -1,0 +1,76 @@
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      transparent
+    )
+    rgb(var(--background-start-rgb));
+} */
+
+
+
+
+
+
+
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css";
+
+:root {
+  --neon-purple: #a855f7;
+  --bg-dark: #0B0E14;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: #ffffff;
+  min-height: 100vh;
+  background-image: 
+    radial-gradient(circle at 0% 0%, rgba(168, 85, 247, 0.15) 0%, transparent 25%),
+    radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.15) 0%, transparent 25%);
+  background-attachment: fixed;
+}
+
+/* Glassmorphism Fix: @apply ke bajaye seedhi CSS use karein agar error aaye */
+@layer components {
+  .glass-card {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border-radius: 1rem;
+  }
+}
+
+/* Custom Input Styles */
+input, textarea {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+input:focus {
+  border-color: var(--neon-purple) !important;
+  outline: none;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+}
